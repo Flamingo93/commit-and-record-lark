@@ -66,6 +66,76 @@ if [ -n "$STAT_OUTPUT" ]; then
   FILES_CHANGED=$(echo "$STAT_OUTPUT" | wc -l | tr -d ' ')
 fi
 
+# --- Extract incremental token/cost from Claude Code transcript (if called from hook) ---
+SESSION_COST=""
+SESSION_INPUT_TOKENS=""
+SESSION_OUTPUT_TOKENS=""
+
+# Try reading hook stdin (non-blocking) for transcript_path
+HOOK_INPUT=""
+if [ ! -t 0 ]; then
+  HOOK_INPUT=$(cat 2>/dev/null || true)
+fi
+
+TRANSCRIPT_PATH=""
+if [ -n "$HOOK_INPUT" ]; then
+  TRANSCRIPT_PATH=$(echo "$HOOK_INPUT" | jq -r '.transcript_path // empty' 2>/dev/null || true)
+fi
+
+OFFSET_FILE="$SKILL_DIR/.last-offset"
+
+if [ -n "$TRANSCRIPT_PATH" ] && [ -f "$TRANSCRIPT_PATH" ]; then
+  TOTAL_LINES=$(wc -l < "$TRANSCRIPT_PATH" | tr -d ' ')
+
+  # Determine where to start: use saved offset if it matches this transcript
+  START_LINE=1
+  if [ -f "$OFFSET_FILE" ]; then
+    SAVED_TRANSCRIPT=$(jq -r '.transcript // empty' "$OFFSET_FILE" 2>/dev/null || true)
+    SAVED_OFFSET=$(jq -r '.offset // 0' "$OFFSET_FILE" 2>/dev/null || true)
+    if [ "$SAVED_TRANSCRIPT" = "$TRANSCRIPT_PATH" ] && [ "$SAVED_OFFSET" -gt 0 ] 2>/dev/null; then
+      START_LINE=$((SAVED_OFFSET + 1))
+    fi
+  fi
+
+  # Only process new lines (from START_LINE to end)
+  if [ "$START_LINE" -le "$TOTAL_LINES" ]; then
+    # Pricing per million tokens (USD):
+    #   claude-opus-4-6:   input=$5,  output=$25, cache_write=$6.25, cache_read=$0.50
+    #   claude-sonnet-4-6: input=$3,  output=$15, cache_write=$3.75, cache_read=$0.30
+    #   claude-haiku-4-5:  input=$1,  output=$5,  cache_write=$1.25, cache_read=$0.10
+    TOKEN_STATS=$(tail -n +"$START_LINE" "$TRANSCRIPT_PATH" | jq -s '
+      [.[] | select(.message.usage != null)]
+      | group_by(.message.id)
+      | map(last)
+      | reduce .[] as $e (
+          {input: 0, output: 0, cost: 0};
+          ($e.message.model // "unknown") as $m
+          | ($e.message.usage.input_tokens // 0) as $in
+          | ($e.message.usage.output_tokens // 0) as $out
+          | ($e.message.usage.cache_creation_input_tokens // 0) as $cw
+          | ($e.message.usage.cache_read_input_tokens // 0) as $cr
+          | (if ($m | test("opus")) then {i: 5, o: 25, cw: 6.25, cr: 0.50}
+             elif ($m | test("sonnet")) then {i: 3, o: 15, cw: 3.75, cr: 0.30}
+             elif ($m | test("haiku")) then {i: 1, o: 5, cw: 1.25, cr: 0.10}
+             else {i: 3, o: 15, cw: 3.75, cr: 0.30} end) as $p
+          | .input += ($in + $cw + $cr)
+          | .output += $out
+          | .cost += (($in * $p.i + $out * $p.o + $cw * $p.cw + $cr * $p.cr) / 1000000)
+        )
+    ' 2>/dev/null || true)
+
+    if [ -n "$TOKEN_STATS" ]; then
+      SESSION_COST=$(echo "$TOKEN_STATS" | jq -r '.cost | . * 10000 | round / 10000')
+      SESSION_INPUT_TOKENS=$(echo "$TOKEN_STATS" | jq -r '.input')
+      SESSION_OUTPUT_TOKENS=$(echo "$TOKEN_STATS" | jq -r '.output')
+    fi
+  fi
+
+  # Save current offset for next incremental calculation
+  jq -n --arg t "$TRANSCRIPT_PATH" --argjson o "$TOTAL_LINES" \
+    '{transcript: $t, offset: $o}' > "$OFFSET_FILE"
+fi
+
 # --- Build JSON payload ---
 JSON_PAYLOAD=$(jq -n \
   --arg hash "$FULL_HASH" \
@@ -78,6 +148,9 @@ JSON_PAYLOAD=$(jq -n \
   --argjson added "$LINES_ADDED" \
   --argjson deleted "$LINES_DELETED" \
   --argjson files "$FILES_CHANGED" \
+  --arg s_cost "$SESSION_COST" \
+  --arg s_in "$SESSION_INPUT_TOKENS" \
+  --arg s_out "$SESSION_OUTPUT_TOKENS" \
   '{
     "commit_hash": $hash,
     "repository": $repo,
@@ -89,7 +162,11 @@ JSON_PAYLOAD=$(jq -n \
     "lines_added": $added,
     "lines_deleted": $deleted,
     "files_changed": $files
-  }')
+  }
+  | if $s_cost != "" then .session_cost = ($s_cost | tonumber) else . end
+  | if $s_in != "" then .session_input_tokens = ($s_in | tonumber) else . end
+  | if $s_out != "" then .session_output_tokens = ($s_out | tonumber) else . end
+  ')
 
 # --- Write to Bitable ---
 echo "Recording commit ${FULL_HASH:0:8} to Feishu Bitable..."

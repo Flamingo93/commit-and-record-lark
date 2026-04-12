@@ -140,6 +140,9 @@ NEW_FIELDS=(
   '{"type":"number","name":"lines_added","style":{"type":"plain","precision":0},"description":"Lines added"}'
   '{"type":"number","name":"lines_deleted","style":{"type":"plain","precision":0},"description":"Lines deleted"}'
   '{"type":"number","name":"files_changed","style":{"type":"plain","precision":0},"description":"Files changed"}'
+  '{"type":"number","name":"session_cost","style":{"type":"plain","precision":4},"description":"Estimated session cost in USD"}'
+  '{"type":"number","name":"session_input_tokens","style":{"type":"plain","precision":0},"description":"Total input tokens (input + cache_write + cache_read)"}'
+  '{"type":"number","name":"session_output_tokens","style":{"type":"plain","precision":0},"description":"Total output tokens"}'
 )
 
 for field_json in "${NEW_FIELDS[@]}"; do
@@ -169,7 +172,7 @@ if [ -n "$VIEW_ID" ]; then
   ALL_FIELDS_JSON=$(echo "$FIELD_LIST_RESULT" | jq '(.data.fields // .data.items)')
 
   # Build visible_fields array: repository, commit_message, commit_hash, branch, author, author_email, commit_time, lines_added, lines_deleted, files_changed
-  FIELD_ORDER='["repository","commit_message","commit_hash","branch","author","author_email","commit_time","lines_added","lines_deleted","files_changed"]'
+  FIELD_ORDER='["repository","commit_message","commit_hash","branch","author","author_email","commit_time","lines_added","lines_deleted","files_changed","session_cost","session_input_tokens","session_output_tokens"]'
   VISIBLE_FIELDS=$(echo "$ALL_FIELDS_JSON" | jq --argjson order "$FIELD_ORDER" '
     [($order[] as $name | . as $fields | $fields[] | select(.name == $name) | (.id // .field_id))]
   ')

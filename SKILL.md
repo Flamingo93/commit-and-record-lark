@@ -25,7 +25,7 @@ bash "$HOME/.claude/skills/commit-and-record-lark/setup.sh"
 
 该脚本会：
 1. 通过 `lark-cli base +base-create` 创建一个新的飞书多维表格
-2. 创建 10 个字段（repository, commit_message, commit_hash, branch, author, author_email, commit_time, lines_added, lines_deleted, files_changed）
+2. 创建 13 个字段（repository, commit_message, commit_hash, branch, author, author_email, commit_time, lines_added, lines_deleted, files_changed, session_cost, session_input_tokens, session_output_tokens）
 3. 为当前用户授予管理员权限
 4. 配置默认视图的字段顺序和按 repository 分组
 5. 将配置保存到 `~/.claude/skills/commit-and-record-lark/bitable-meta.json`
@@ -89,6 +89,9 @@ bash "$HOME/.claude/skills/commit-and-record-lark/record-commit.sh" <commit-hash
 | lines_added | number | 新增行数 |
 | lines_deleted | number | 删除行数 |
 | files_changed | number | 修改文件数 |
+| session_cost | number | 当前 session 预估费用 (USD)，仅 Hook 触发时自动填充 |
+| session_input_tokens | number | 当前 session 总输入 token 数（含 cache），仅 Hook 触发时自动填充 |
+| session_output_tokens | number | 当前 session 总输出 token 数，仅 Hook 触发时自动填充 |
 
 ## 配置文件
 
