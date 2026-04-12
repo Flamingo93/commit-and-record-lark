@@ -32,11 +32,27 @@ bash "$HOME/.claude/skills/commit-and-record-lark/setup.sh"
 
 初始化只需执行一次，之后在任意 git 仓库中都可以直接记录 commit。
 
-如需重新初始化（创建新的多维表格）：
+## 管理多维表格
+
+### 重置（新建表格）
+
+用户在 skill 名字后加 `reset`（如 `/commit-and-record-lark reset`）时，执行：
 
 ```bash
 bash "$HOME/.claude/skills/commit-and-record-lark/setup.sh" --force
 ```
+
+会创建一个全新的多维表格并覆盖旧配置。
+
+### 关联已有表格
+
+用户在 skill 名字后加 `attach <URL>`（如 `/commit-and-record-lark attach https://my.feishu.cn/base/xxx?table=yyy`）时，执行：
+
+```bash
+bash "$HOME/.claude/skills/commit-and-record-lark/attach.sh" "<URL>"
+```
+
+从飞书多维表格 URL 中解析 base_token 和 table_id，验证连接后保存到配置文件。
 
 ## 记录 commit
 
