@@ -58,6 +58,9 @@ bash "$HOME/.claude/skills/commit-and-record-lark/record-commit.sh" <commit-hash
 |------|------|------|
 | repository | text | 仓库名 (owner/repo)，主字段，按此分组 |
 | commit_message | text | 提交信息 |
+| session_cost | number | 本次 commit 区间的预估费用 (USD) |
+| session_input_tokens | number | 本次 commit 区间的输入 token 数（含 cache） |
+| session_output_tokens | number | 本次 commit 区间的输出 token 数 |
 | commit_hash | text | 完整 SHA 哈希 |
 | branch | text | 当前分支名 |
 | author | text | 提交作者 |
@@ -66,9 +69,6 @@ bash "$HOME/.claude/skills/commit-and-record-lark/record-commit.sh" <commit-hash
 | lines_added | number | 新增行数 |
 | lines_deleted | number | 删除行数 |
 | files_changed | number | 修改文件数 |
-| session_cost | number | 本次 commit 区间的预估费用 (USD)，自动从 session transcript 计算 |
-| session_input_tokens | number | 本次 commit 区间的输入 token 数（含 cache） |
-| session_output_tokens | number | 本次 commit 区间的输出 token 数 |
 
 ## 配置文件
 
