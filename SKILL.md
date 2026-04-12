@@ -84,9 +84,9 @@ bash "$HOME/.claude/skills/commit-and-record-lark/record-commit.sh" <commit-hash
 |------|------|------|
 | repository | text | 仓库名 (owner/repo)，主字段，按此分组 |
 | commit_message | text | 提交信息 |
-| session_cost | number | 本次 commit 区间的预估费用 (USD) |
-| session_input_tokens | number | 本次 commit 区间的输入 token 数（含 cache） |
-| session_output_tokens | number | 本次 commit 区间的输出 token 数 |
+| session_cost | number (USD) | 本次 commit 区间的预估费用，以美元货币格式显示 |
+| session_input_tokens | number | 本次 commit 区间的输入 token 数（含 cache），千分位格式 |
+| session_output_tokens | number | 本次 commit 区间的输出 token 数，千分位格式 |
 | commit_hash | text | 完整 SHA 哈希 |
 | branch | text | 当前分支名 |
 | author | text | 提交作者 |
@@ -107,6 +107,18 @@ bash "$HOME/.claude/skills/commit-and-record-lark/record-commit.sh" <commit-hash
   "base_url": "https://my.feishu.cn/base/xxx"
 }
 ```
+
+## session_cost 计价说明
+
+session_cost 通过解析 Claude Code 的 session transcript (JSONL) 文件，按模型分别计算后汇总。定价如下（单位：美元/百万 token）：
+
+| 模型 | input | output | cache_write | cache_read |
+|------|-------|--------|-------------|------------|
+| claude-opus-4-6 | $5 | $25 | $6.25 | $0.50 |
+| claude-sonnet-4-6 | $3 | $15 | $3.75 | $0.30 |
+| claude-haiku-4-5 | $1 | $5 | $1.25 | $0.10 |
+
+每次记录只计算自上次记录以来新增的 token 消耗（增量计算），通过 `.last-offset` 文件跟踪偏移量。
 
 ## 故障排查
 

@@ -133,9 +133,9 @@ done
 # Layout: repository(primary) | commit_message | session_cost | session_input_tokens | session_output_tokens | ...
 NEW_FIELDS=(
   '{"type":"text","name":"commit_message","description":"Commit message"}'
-  '{"type":"number","name":"session_cost","style":{"type":"plain","precision":4},"description":"Estimated session cost in USD"}'
-  '{"type":"number","name":"session_input_tokens","style":{"type":"plain","precision":0},"description":"Total input tokens (input + cache_write + cache_read)"}'
-  '{"type":"number","name":"session_output_tokens","style":{"type":"plain","precision":0},"description":"Total output tokens"}'
+  '{"type":"number","name":"session_cost","style":{"type":"currency","currency_code":"USD","precision":4},"description":"Estimated session cost in USD"}'
+  '{"type":"number","name":"session_input_tokens","style":{"type":"plain","precision":0,"thousands_separator":true},"description":"Total input tokens (input + cache_write + cache_read)"}'
+  '{"type":"number","name":"session_output_tokens","style":{"type":"plain","precision":0,"thousands_separator":true},"description":"Total output tokens"}'
   '{"type":"text","name":"commit_hash","description":"Git commit SHA hash"}'
   '{"type":"text","name":"branch","description":"Git branch name"}'
   '{"type":"text","name":"author","description":"Commit author name"}'
