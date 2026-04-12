@@ -52,29 +52,6 @@ bash "$HOME/.claude/skills/commit-and-record-lark/record-commit.sh"
 bash "$HOME/.claude/skills/commit-and-record-lark/record-commit.sh" <commit-hash>
 ```
 
-### 自动记录（Hook）
-
-在项目的 `.claude/settings.json` 中配置 PostToolUse hook，可在通过 Claude Code 执行 `git commit` 后自动触发记录：
-
-```json
-{
-  "hooks": {
-    "PostToolUse": [
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "if": "Bash(git commit*)",
-            "command": "bash \"$HOME/.claude/skills/commit-and-record-lark/record-commit.sh\" HEAD"
-          }
-        ]
-      }
-    ]
-  }
-}
-```
-
 ## 记录的字段
 
 | 字段 | 类型 | 说明 |
@@ -89,9 +66,9 @@ bash "$HOME/.claude/skills/commit-and-record-lark/record-commit.sh" <commit-hash
 | lines_added | number | 新增行数 |
 | lines_deleted | number | 删除行数 |
 | files_changed | number | 修改文件数 |
-| session_cost | number | 当前 session 预估费用 (USD)，仅 Hook 触发时自动填充 |
-| session_input_tokens | number | 当前 session 总输入 token 数（含 cache），仅 Hook 触发时自动填充 |
-| session_output_tokens | number | 当前 session 总输出 token 数，仅 Hook 触发时自动填充 |
+| session_cost | number | 本次 commit 区间的预估费用 (USD)，自动从 session transcript 计算 |
+| session_input_tokens | number | 本次 commit 区间的输入 token 数（含 cache） |
+| session_output_tokens | number | 本次 commit 区间的输出 token 数 |
 
 ## 配置文件
 

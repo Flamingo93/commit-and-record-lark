@@ -1,16 +1,1 @@
-{
-  "hooks": {
-    "PostToolUse": [
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "if": "Bash(git commit*)",
-            "command": "bash \"$HOME/.claude/skills/commit-and-record-lark/record-commit.sh\" HEAD"
-          }
-        ]
-      }
-    ]
-  }
-}
+{}
