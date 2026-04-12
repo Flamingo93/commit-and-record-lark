@@ -66,7 +66,7 @@ if [ -n "$STAT_OUTPUT" ]; then
   FILES_CHANGED=$(echo "$STAT_OUTPUT" | wc -l | tr -d ' ')
 fi
 
-# --- Extract incremental token/cost from Claude Code transcript (if called from hook) ---
+# --- Extract incremental token/cost from Claude Code transcript ---
 SESSION_COST=""
 SESSION_INPUT_TOKENS=""
 SESSION_OUTPUT_TOKENS=""
@@ -80,6 +80,15 @@ fi
 TRANSCRIPT_PATH=""
 if [ -n "$HOOK_INPUT" ]; then
   TRANSCRIPT_PATH=$(echo "$HOOK_INPUT" | jq -r '.transcript_path // empty' 2>/dev/null || true)
+fi
+
+# Fallback: find the most recent transcript for the current project
+if [ -z "$TRANSCRIPT_PATH" ] || [ ! -f "$TRANSCRIPT_PATH" ]; then
+  PROJECT_DIR_NAME=$(echo "$REPO_ROOT" | tr '/' '-')
+  CLAUDE_PROJECT_DIR="$HOME/.claude/projects/$PROJECT_DIR_NAME"
+  if [ -d "$CLAUDE_PROJECT_DIR" ]; then
+    TRANSCRIPT_PATH=$(ls -t "$CLAUDE_PROJECT_DIR"/*.jsonl 2>/dev/null | head -1 || true)
+  fi
 fi
 
 OFFSET_FILE="$SKILL_DIR/.last-offset"
