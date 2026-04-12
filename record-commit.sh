@@ -5,13 +5,9 @@
 
 set -euo pipefail
 
-# --- Locate git repo root and config ---
-REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null) || {
-  echo "Error: Not inside a git repository" >&2
-  exit 1
-}
-
-CONFIG_FILE="$REPO_ROOT/.commit-record.json"
+# --- Locate config (global, next to this script) ---
+SKILL_DIR="$(cd "$(dirname "$0")" && pwd)"
+CONFIG_FILE="$SKILL_DIR/bitable-meta.json"
 
 if [ ! -f "$CONFIG_FILE" ]; then
   echo "Error: Config file not found at $CONFIG_FILE" >&2
@@ -26,6 +22,14 @@ if [ -z "$BASE_TOKEN" ] || [ -z "$TABLE_ID" ]; then
   echo "Error: Invalid config - missing base_token or table_id" >&2
   exit 1
 fi
+
+# --- Must be in a git repo ---
+git rev-parse --is-inside-work-tree >/dev/null 2>&1 || {
+  echo "Error: Not inside a git repository" >&2
+  exit 1
+}
+
+REPO_ROOT=$(git rev-parse --show-toplevel)
 
 # --- Determine commit hash ---
 COMMIT_HASH="${1:-HEAD}"
@@ -96,8 +100,10 @@ RESULT=$(lark-cli base +record-upsert \
   --json "$JSON_PAYLOAD" 2>&1)
 
 if echo "$RESULT" | jq -e '.ok == true' >/dev/null 2>&1; then
-  RECORD_ID=$(echo "$RESULT" | jq -r '.data.record.record_id // "unknown"')
+  RECORD_ID=$(echo "$RESULT" | jq -r '.data.record.record_id_list[0] // .data.record.record_id // "unknown"')
+  BASE_URL=$(jq -r '.base_url // empty' "$CONFIG_FILE")
   echo "Success: Commit ${FULL_HASH:0:8} recorded (record_id: $RECORD_ID)"
+  [ -n "$BASE_URL" ] && echo "Bitable URL: $BASE_URL"
 else
   ERROR_MSG=$(echo "$RESULT" | jq -r '.error.message // "Unknown error"' 2>/dev/null || echo "$RESULT")
   echo "Error recording commit: $ERROR_MSG" >&2

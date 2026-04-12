@@ -7,7 +7,7 @@
           {
             "type": "command",
             "if": "Bash(git commit*)",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/skills/commit-record/record-commit.sh\" HEAD"
+            "command": "bash \"$HOME/.claude/skills/commit-and-record-lark/record-commit.sh\" HEAD"
           }
         ]
       }
