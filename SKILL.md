@@ -32,6 +32,16 @@ bash "$HOME/.claude/skills/commit-and-record-lark/setup.sh"
 
 初始化只需执行一次，之后在任意 git 仓库中都可以直接记录 commit。
 
+## 默认行为
+
+不带任何子命令直接执行 `/commit-and-record-lark` 时，执行默认操作：**提交当前变更并记录到飞书多维表格**。
+
+具体流程：
+1. 将当前已修改的文件 `git commit`
+2. 执行 `record-commit.sh HEAD` 将该 commit 记录到飞书多维表格
+
+这是最常用的操作，等价于"commit 并记录"。
+
 ## 管理多维表格
 
 ### 重置（新建表格）
