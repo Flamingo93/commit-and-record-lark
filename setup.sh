@@ -36,7 +36,7 @@ echo ""
 
 # --- Step 1: Create Bitable ---
 echo "[1/8] Creating Bitable..."
-CREATE_RESULT=$(lark-cli base +base-create --name "Commit Records" 2>&1)
+CREATE_RESULT=$(lark-cli base +base-create --name "Commit Records" 2>&1) || true
 
 if ! echo "$CREATE_RESULT" | jq -e '.ok == true' >/dev/null 2>&1; then
   echo "Error: Failed to create Bitable" >&2
@@ -58,7 +58,7 @@ if [ -n "$USER_OPEN_ID" ]; then
   PERM_RESULT=$(lark-cli drive permission.members create \
     --params "{\"token\":\"$BASE_TOKEN\",\"type\":\"bitable\"}" \
     --data "{\"member_type\":\"openid\",\"member_id\":\"$USER_OPEN_ID\",\"perm\":\"full_access\"}" \
-    --as bot 2>&1)
+    --as bot 2>&1) || true
   if echo "$PERM_RESULT" | jq -e '.code == 0' >/dev/null 2>&1; then
     echo "  Granted full_access to current user"
   else
@@ -72,7 +72,7 @@ else
     PERM_RESULT=$(lark-cli drive permission.members create \
       --params "{\"token\":\"$BASE_TOKEN\",\"type\":\"bitable\"}" \
       --data "{\"member_type\":\"openid\",\"member_id\":\"$FALLBACK_ID\",\"perm\":\"full_access\"}" \
-      --as bot 2>&1)
+      --as bot 2>&1) || true
     if echo "$PERM_RESULT" | jq -e '.code == 0' >/dev/null 2>&1; then
       echo "  Granted full_access to current user"
     else
@@ -86,7 +86,7 @@ fi
 
 # --- Step 3: Get default table ---
 echo "[3/8] Getting default table..."
-TABLE_RESULT=$(lark-cli base +table-list --base-token "$BASE_TOKEN" 2>&1)
+TABLE_RESULT=$(lark-cli base +table-list --base-token "$BASE_TOKEN" 2>&1) || true
 
 if ! echo "$TABLE_RESULT" | jq -e '.ok == true' >/dev/null 2>&1; then
   echo "Error: Failed to list tables" >&2
@@ -101,7 +101,7 @@ echo "  Table ID: $TABLE_ID"
 echo "[4/8] Setting up fields..."
 
 # Get default fields
-FIELD_RESULT=$(lark-cli base +field-list --base-token "$BASE_TOKEN" --table-id "$TABLE_ID" 2>&1)
+FIELD_RESULT=$(lark-cli base +field-list --base-token "$BASE_TOKEN" --table-id "$TABLE_ID" 2>&1) || true
 FIELDS_JSON=$(echo "$FIELD_RESULT" | jq '(.data.fields // .data.items)')
 
 # Find the primary field (default name "文本" in Chinese Feishu) and repurpose it as repository
@@ -148,13 +148,23 @@ NEW_FIELDS=(
 
 for field_json in "${NEW_FIELDS[@]}"; do
   FIELD_NAME=$(echo "$field_json" | jq -r '.name')
-  RESULT=$(lark-cli base +field-create --base-token "$BASE_TOKEN" --table-id "$TABLE_ID" --json "$field_json" 2>&1)
-  if echo "$RESULT" | jq -e '.ok == true' >/dev/null 2>&1; then
-    echo "  Created field: $FIELD_NAME"
-  else
-    echo "  Warning: Failed to create field $FIELD_NAME" >&2
+  CREATED=false
+  for attempt in 1 2 3; do
+    RESULT=$(lark-cli base +field-create --base-token "$BASE_TOKEN" --table-id "$TABLE_ID" --json "$field_json" 2>&1) || true
+    if echo "$RESULT" | jq -e '.ok == true' >/dev/null 2>&1; then
+      echo "  Created field: $FIELD_NAME"
+      CREATED=true
+      break
+    fi
+    echo "  Attempt $attempt failed for $FIELD_NAME, retrying..." >&2
+    sleep 1
+  done
+  if [ "$CREATED" = false ]; then
+    echo "  Error: Failed to create field $FIELD_NAME after 3 attempts" >&2
     echo "  $RESULT" >&2
+    exit 1
   fi
+  sleep 0.3
 done
 
 # --- Step 5: Rename table ---
@@ -164,12 +174,12 @@ echo "  Table renamed to: Commit Records"
 
 # --- Step 6: Configure view - field order ---
 echo "[6/8] Configuring view field order..."
-VIEW_RESULT=$(lark-cli base +view-list --base-token "$BASE_TOKEN" --table-id "$TABLE_ID" 2>&1)
+VIEW_RESULT=$(lark-cli base +view-list --base-token "$BASE_TOKEN" --table-id "$TABLE_ID" 2>&1) || true
 VIEW_ID=$(echo "$VIEW_RESULT" | jq -r '.data.views[0].id // .data.items[0].view_id // empty' 2>/dev/null)
 
 if [ -n "$VIEW_ID" ]; then
   # Get all field IDs in the desired order
-  FIELD_LIST_RESULT=$(lark-cli base +field-list --base-token "$BASE_TOKEN" --table-id "$TABLE_ID" 2>&1)
+  FIELD_LIST_RESULT=$(lark-cli base +field-list --base-token "$BASE_TOKEN" --table-id "$TABLE_ID" 2>&1) || true
   ALL_FIELDS_JSON=$(echo "$FIELD_LIST_RESULT" | jq '(.data.fields // .data.items)')
 
   # Build visible_fields array: repository, commit_message, commit_hash, branch, author, author_email, commit_time, lines_added, lines_deleted, files_changed
@@ -180,7 +190,7 @@ if [ -n "$VIEW_ID" ]; then
 
   VF_JSON=$(jq -n --argjson vf "$VISIBLE_FIELDS" '{"visible_fields": $vf}')
   SET_VF_RESULT=$(lark-cli base +view-set-visible-fields --base-token "$BASE_TOKEN" --table-id "$TABLE_ID" \
-    --view-id "$VIEW_ID" --json "$VF_JSON" 2>&1)
+    --view-id "$VIEW_ID" --json "$VF_JSON" 2>&1) || true
   if echo "$SET_VF_RESULT" | jq -e '.ok == true' >/dev/null 2>&1; then
     echo "  Field order configured"
   else
@@ -193,7 +203,7 @@ if [ -n "$VIEW_ID" ]; then
   REPO_FIELD_ID=$(echo "$ALL_FIELDS_JSON" | jq -r '.[] | select(.name == "repository") | (.id // .field_id)')
   GROUP_JSON=$(jq -n --arg fid "$REPO_FIELD_ID" '{"group_config": [{"field": $fid, "desc": false}]}')
   SET_GROUP_RESULT=$(lark-cli base +view-set-group --base-token "$BASE_TOKEN" --table-id "$TABLE_ID" \
-    --view-id "$VIEW_ID" --json "$GROUP_JSON" 2>&1)
+    --view-id "$VIEW_ID" --json "$GROUP_JSON" 2>&1) || true
   if echo "$SET_GROUP_RESULT" | jq -e '.ok == true' >/dev/null 2>&1; then
     echo "  Grouped by repository"
   else
