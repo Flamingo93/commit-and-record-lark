@@ -31,11 +31,11 @@ if [ -f "$CONFIG_FILE" ]; then
   fi
 fi
 
-echo "=== Commit Record Setup ==="
+echo "=== Commit Record Setup (9 steps) ==="
 echo ""
 
 # --- Step 1: Create Bitable ---
-echo "[1/8] Creating Bitable..."
+echo "[1/9] Creating Bitable..."
 CREATE_RESULT=$(lark-cli base +base-create --name "Commit Records" 2>&1) || true
 
 if ! echo "$CREATE_RESULT" | jq -e '.ok == true' >/dev/null 2>&1; then
@@ -50,7 +50,7 @@ echo "  Base Token: $BASE_TOKEN"
 [ -n "$BASE_URL" ] && echo "  URL: $BASE_URL"
 
 # --- Step 2: Grant current user full_access permission ---
-echo "[2/8] Granting user permission..."
+echo "[2/9] Granting user permission..."
 USER_RESULT=$(lark-cli contact +get-user --as user 2>&1 || true)
 USER_OPEN_ID=$(echo "$USER_RESULT" | jq -r '.data.open_id // empty' 2>/dev/null || true)
 
@@ -85,7 +85,7 @@ else
 fi
 
 # --- Step 3: Get default table ---
-echo "[3/8] Getting default table..."
+echo "[3/9] Getting default table..."
 TABLE_RESULT=$(lark-cli base +table-list --base-token "$BASE_TOKEN" 2>&1) || true
 
 if ! echo "$TABLE_RESULT" | jq -e '.ok == true' >/dev/null 2>&1; then
@@ -98,7 +98,7 @@ TABLE_ID=$(echo "$TABLE_RESULT" | jq -r '.data.tables[0].id // .data.items[0].ta
 echo "  Table ID: $TABLE_ID"
 
 # --- Step 4: Set up fields ---
-echo "[4/8] Setting up fields..."
+echo "[4/9] Setting up fields..."
 
 # Get default fields
 FIELD_RESULT=$(lark-cli base +field-list --base-token "$BASE_TOKEN" --table-id "$TABLE_ID" 2>&1) || true
@@ -169,12 +169,12 @@ for field_json in "${NEW_FIELDS[@]}"; do
 done
 
 # --- Step 5: Rename table ---
-echo "[5/8] Renaming table..."
+echo "[5/9] Renaming table..."
 lark-cli base +table-update --base-token "$BASE_TOKEN" --table-id "$TABLE_ID" --name "Commit Records" >/dev/null 2>&1 || echo "  Warning: Failed to rename table" >&2
 echo "  Table renamed to: Commit Records"
 
 # --- Step 6: Configure view - field order ---
-echo "[6/8] Configuring view field order..."
+echo "[6/9] Configuring view field order..."
 VIEW_RESULT=$(lark-cli base +view-list --base-token "$BASE_TOKEN" --table-id "$TABLE_ID" 2>&1) || true
 VIEW_ID=$(echo "$VIEW_RESULT" | jq -r '.data.views[0].id // .data.items[0].view_id // empty' 2>/dev/null)
 
@@ -200,7 +200,7 @@ if [ -n "$VIEW_ID" ]; then
   fi
 
   # --- Step 7: Configure view - group by repository ---
-  echo "[7/8] Configuring group by repository..."
+  echo "[7/9] Configuring group by repository..."
   REPO_FIELD_ID=$(echo "$ALL_FIELDS_JSON" | jq -r '.[] | select(.name == "repository") | (.id // .field_id)')
   GROUP_JSON=$(jq -n --arg fid "$REPO_FIELD_ID" '{"group_config": [{"field": $fid, "desc": false}]}')
   SET_GROUP_RESULT=$(lark-cli base +view-set-group --base-token "$BASE_TOKEN" --table-id "$TABLE_ID" \
@@ -211,12 +211,25 @@ if [ -n "$VIEW_ID" ]; then
     echo "  Warning: Failed to set group" >&2
     echo "  $SET_GROUP_RESULT" >&2
   fi
+
+  # --- Step 8/9: Configure view - sort by commit_time descending ---
+  echo "[8/9] Configuring sort by commit_time (newest first)..."
+  COMMIT_TIME_FIELD_ID=$(echo "$ALL_FIELDS_JSON" | jq -r '.[] | select(.name == "commit_time") | (.id // .field_id)')
+  SORT_JSON=$(jq -n --arg fid "$COMMIT_TIME_FIELD_ID" '{"sort_config": [{"field": $fid, "desc": true}]}')
+  SET_SORT_RESULT=$(lark-cli base +view-set-sort --base-token "$BASE_TOKEN" --table-id "$TABLE_ID" \
+    --view-id "$VIEW_ID" --json "$SORT_JSON" 2>&1) || true
+  if echo "$SET_SORT_RESULT" | jq -e '.ok == true' >/dev/null 2>&1; then
+    echo "  Sorted by commit_time (descending)"
+  else
+    echo "  Warning: Failed to set sort" >&2
+    echo "  $SET_SORT_RESULT" >&2
+  fi
 else
   echo "  Warning: No view found, skipping view configuration" >&2
 fi
 
-# --- Step 8: Save config ---
-echo "[8/8] Saving config..."
+# --- Step 9: Save config ---
+echo "[9/9] Saving config..."
 jq -n \
   --arg base_token "$BASE_TOKEN" \
   --arg table_id "$TABLE_ID" \
