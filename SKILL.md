@@ -1,13 +1,19 @@
 ---
 name: commit-and-record-lark
-version: 1.0.0
-description: "将 git commit 信息自动记录到飞书多维表格。当用户需要记录 commit、追踪代码提交、初始化 commit 记录表时使用。"
+description: "将 git commit 信息自动记录到飞书多维表格。当用户需要记录 commit、追踪代码提交、初始化或重置 commit 记录表、关联已有飞书多维表格、或手动补录指定 commit 时使用。"
 ---
 
 # Commit Record
 
 将 git commit 信息自动记录到飞书多维表格（Bitable），用于代码提交记录的追踪和分析。
 所有项目共享同一张多维表格，通过 repository 字段区分不同仓库。
+
+## 执行原则
+
+- 先定位当前 skill 目录，再执行该目录下的 `setup.sh`、`record-commit.sh`、`attach.sh`
+- 不要假设 skill 安装在 `~/.claude/skills` 或 `~/.codex/skills`；路径以当前 `SKILL.md` 所在目录为准
+- 记录 commit 前，确认当前工作目录是目标 git 仓库
+- 涉及飞书写入前，确认用户意图；如用户已明确要求执行，可直接运行相关脚本
 
 ## 前置条件
 
@@ -20,7 +26,7 @@ description: "将 git commit 信息自动记录到飞书多维表格。当用户
 用户首次使用时，需要先初始化飞书多维表格：
 
 ```bash
-bash "$HOME/.claude/skills/commit-and-record-lark/setup.sh"
+bash "<skill-dir>/setup.sh"
 ```
 
 该脚本会：
@@ -28,7 +34,7 @@ bash "$HOME/.claude/skills/commit-and-record-lark/setup.sh"
 2. 创建 13 个字段（repository, commit_message, commit_hash, branch, author, author_email, commit_time, lines_added, lines_deleted, files_changed, session_cost, session_input_tokens, session_output_tokens）
 3. 为当前用户授予管理员权限
 4. 配置默认视图的字段顺序和按 repository 分组
-5. 将配置保存到 `~/.claude/skills/commit-and-record-lark/bitable-meta.json`
+5. 将配置保存到当前 skill 目录下的 `bitable-meta.json`
 
 初始化只需执行一次，之后在任意 git 仓库中都可以直接记录 commit。
 
@@ -38,7 +44,7 @@ bash "$HOME/.claude/skills/commit-and-record-lark/setup.sh"
 
 具体流程：
 1. 将当前已修改的文件 `git commit`
-2. 执行 `record-commit.sh HEAD` 将该 commit 记录到飞书多维表格
+2. 执行 `bash "<skill-dir>/record-commit.sh" HEAD` 将该 commit 记录到飞书多维表格
 
 这是最常用的操作，等价于"commit 并记录"。
 
@@ -49,7 +55,7 @@ bash "$HOME/.claude/skills/commit-and-record-lark/setup.sh"
 用户在 skill 名字后加 `reset`（如 `/commit-and-record-lark reset`）时，执行：
 
 ```bash
-bash "$HOME/.claude/skills/commit-and-record-lark/setup.sh" --force
+bash "<skill-dir>/setup.sh" --force
 ```
 
 会创建一个全新的多维表格并覆盖旧配置。
@@ -59,7 +65,7 @@ bash "$HOME/.claude/skills/commit-and-record-lark/setup.sh" --force
 用户在 skill 名字后加 `attach <URL>`（如 `/commit-and-record-lark attach https://my.feishu.cn/base/xxx?table=yyy`）时，执行：
 
 ```bash
-bash "$HOME/.claude/skills/commit-and-record-lark/attach.sh" "<URL>"
+bash "<skill-dir>/attach.sh" "<URL>"
 ```
 
 从飞书多维表格 URL 中解析 base_token 和 table_id，验证连接后保存到配置文件。
@@ -69,13 +75,13 @@ bash "$HOME/.claude/skills/commit-and-record-lark/attach.sh" "<URL>"
 ### 手动记录最近一次 commit
 
 ```bash
-bash "$HOME/.claude/skills/commit-and-record-lark/record-commit.sh"
+bash "<skill-dir>/record-commit.sh"
 ```
 
 ### 记录指定 commit
 
 ```bash
-bash "$HOME/.claude/skills/commit-and-record-lark/record-commit.sh" <commit-hash>
+bash "<skill-dir>/record-commit.sh" <commit-hash>
 ```
 
 ## 记录的字段
@@ -98,7 +104,7 @@ bash "$HOME/.claude/skills/commit-and-record-lark/record-commit.sh" <commit-hash
 
 ## 配置文件
 
-全局配置存储在 `~/.claude/skills/commit-and-record-lark/bitable-meta.json`：
+全局配置存储在当前 skill 目录下的 `bitable-meta.json`：
 
 ```json
 {
