@@ -16,12 +16,12 @@
 
 ## 前置条件
 
-- [Claude Code](https://claude.ai/code) 或 Codex 已安装
-- [`lark-cli`](https://github.com/larksuite/cli) 已安装并完成认证（`lark-cli auth login`）
+- Claude Code 或 Codex 已安装
+- [`飞书CLI`](https://github.com/larksuite/cli) 已安装并完成认证（`lark-cli auth login`）
 - `jq` 已安装
 - 当前目录在一个 git 仓库内
 
-> 本项目依赖 `lark-cli` 的多维表格（Base）能力，包括 `+base-create`、`+table-list`、`+field-create`、`+record-upsert`、`+view-set-visible-fields` 等命令，用于创建和操作飞书多维表格。
+> 本项目依赖 `飞书CLI` 的多维表格（Base）能力，包括 `+base-create`、`+table-list`、`+field-create`、`+record-upsert`、`+view-set-visible-fields` 等命令，用于创建和操作飞书多维表格。
 
 ## 安装
 
