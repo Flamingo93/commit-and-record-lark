@@ -1,6 +1,6 @@
 # commit-and-record-lark
 
-一个 [Claude Code](https://claude.ai/code) 的 Skill 插件，在执行 git commit 时自动将提交信息记录到**飞书多维表格（Bitable）**，实现代码提交的追踪与分析。
+一个适用于 [Claude Code](https://claude.ai/code) 和 Codex 的 Skill 插件，在执行 git commit 时自动将提交信息记录到**飞书多维表格（Bitable）**，实现代码提交的追踪与分析。
 
 所有项目共享同一张多维表格，通过 `repository` 字段区分不同仓库。
 
@@ -8,14 +8,15 @@
 
 - **一键 commit + 记录** — 执行 `/commit-and-record-lark` 即可完成 git commit 并同步到飞书多维表格
 - **自动采集 commit 元数据** — 仓库名、分支、作者、提交时间、变更行数、文件数等
-- **Session 成本追踪** — 自动解析 Claude Code 的 transcript 文件，按模型计算每次 commit 区间的 token 消耗和预估费用（增量计算）
+- **Session 成本追踪** — 自动解析 Claude Code transcript 或 Codex session 文件，按模型计算每次 commit 区间的 token 消耗和预估费用（增量计算）
+- **Session 模型记录** — 将本次 commit 区间内最后一个活跃模型记录到 `session_model` 字段
 - **多维表格自动初始化** — 一条命令完成飞书多维表格的创建、字段配置、权限设置和视图排布
 - **关联已有表格** — 支持通过 URL 直接关联已有的飞书多维表格
 - **跨项目共享** — 全局安装，在任意 git 仓库中均可使用
 
 ## 前置条件
 
-- [Claude Code](https://claude.ai/code) 已安装
+- [Claude Code](https://claude.ai/code) 或 Codex 已安装
 - [`lark-cli`](https://github.com/nicepkg/lark-cli) 已安装并完成认证（`lark-cli auth login`）
 - `jq` 已安装
 - 当前目录在一个 git 仓库内
@@ -24,13 +25,13 @@
 
 ## 安装
 
-将本仓库克隆到 Claude Code 的全局 skills 目录，即可作为 Skill 使用：
+将本仓库克隆到宿主 Agent 的全局 skills 目录，即可作为 Skill 使用：
 
 ```bash
 # 克隆仓库
 git clone https://github.com/<your-org>/commit-and-record-lark.git
 
-# 创建符号链接到 Claude Code 的 skills 目录
+# 创建符号链接到 skills 目录（Claude Code 示例）
 ln -s "$(pwd)/commit-and-record-lark" ~/.claude/skills/commit-and-record-lark
 ```
 
@@ -41,6 +42,8 @@ git clone https://github.com/<your-org>/commit-and-record-lark.git ~/.claude/ski
 ```
 
 安装完成后，在 Claude Code 中即可通过 `/commit-and-record-lark` 调用。
+
+如果你在 Codex 中使用本 Skill，可将链接目录替换为 `~/.codex/skills/commit-and-record-lark`。
 
 ## 使用方法
 
@@ -58,7 +61,7 @@ bash ~/.claude/skills/commit-and-record-lark/setup.sh
 
 该命令会自动：
 1. 通过 `lark-cli` 创建飞书多维表格
-2. 创建 13 个字段（commit 信息 + session 成本）
+2. 创建 14 个字段（commit 信息 + session 成本 + session 模型）
 3. 授予当前用户管理员权限
 4. 配置视图的字段顺序和按仓库分组
 5. 将配置保存到 `bitable-meta.json`
@@ -101,6 +104,7 @@ bash ~/.claude/skills/commit-and-record-lark/record-commit.sh <commit-hash>
 |------|------|------|
 | repository | text | 仓库名（owner/repo），按此分组 |
 | commit_message | text | 提交信息 |
+| session_model | text | 本次 commit 区间内最后一个活跃模型 |
 | session_cost | number (USD) | 本次 commit 区间的预估费用 |
 | session_input_tokens | number | 输入 token 数（含 cache） |
 | session_output_tokens | number | 输出 token 数 |
@@ -115,13 +119,15 @@ bash ~/.claude/skills/commit-and-record-lark/record-commit.sh <commit-hash>
 
 ## Session 成本计价
 
-通过解析 Claude Code 的 session transcript（JSONL）文件，按模型分别计算 token 消耗和费用。每次记录只计算自上次记录以来新增的消耗（增量计算）。
+通过解析 Claude Code 的 session transcript（JSONL）或 Codex session 文件，按模型分别计算 token 消耗和费用。每次记录只计算自上次记录以来新增的消耗（增量计算）。
 
 | 模型 | input | output | cache_write | cache_read |
 |------|-------|--------|-------------|------------|
 | claude-opus-4-6 | $5/M | $25/M | $6.25/M | $0.50/M |
 | claude-sonnet-4-6 | $3/M | $15/M | $3.75/M | $0.30/M |
 | claude-haiku-4-5 | $1/M | $5/M | $1.25/M | $0.10/M |
+
+在 Codex 环境下，脚本会根据 OpenAI GPT/Codex 模型分别计算价格，并记录 `session_model`。当前内置了 `gpt-5.4`、`gpt-5.3-codex`、`gpt-5.2-codex`、`gpt-5.1-codex`、`gpt-5.1-codex-mini`、`gpt-5.1-codex-max`、`codex-mini-latest` 等常见模型的价格映射；遇到未知模型时仍会记录 token 和模型，但会跳过 `session_cost`。
 
 ## 项目结构
 
@@ -132,7 +138,7 @@ commit-and-record-lark/
 ├── record-commit.sh    # 记录 commit 到多维表格
 ├── attach.sh           # 关联已有多维表格
 ├── bitable-meta.json   # 多维表格配置（自动生成，已 gitignore）
-└── .last-offset        # transcript 偏移量（自动生成，已 gitignore）
+└── .last-offset        # session 偏移量与累计状态（自动生成，已 gitignore）
 ```
 
 ## 故障排查

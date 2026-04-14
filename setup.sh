@@ -129,12 +129,13 @@ for fid in $OTHER_FIELD_IDS; do
   fi
 done
 
-# Create the remaining 12 fields (order matters for default column position)
-# Layout: repository(primary) | commit_message | session_cost | session_input_tokens | session_output_tokens | ...
+# Create the remaining 13 fields (order matters for default column position)
+# Layout: repository(primary) | commit_message | session_model | session_cost | session_input_tokens | session_output_tokens | ...
 NEW_FIELDS=(
   '{"type":"text","name":"commit_message","description":"Commit message"}'
+  '{"type":"text","name":"session_model","description":"Last active session model for this commit interval"}'
   '{"type":"number","name":"session_cost","style":{"type":"currency","currency_code":"USD","precision":4},"description":"Estimated session cost in USD"}'
-  '{"type":"number","name":"session_input_tokens","style":{"type":"plain","precision":0,"thousands_separator":true},"description":"Total input tokens (input + cache_write + cache_read)"}'
+  '{"type":"number","name":"session_input_tokens","style":{"type":"plain","precision":0,"thousands_separator":true},"description":"Total input tokens (including cached input when applicable)"}'
   '{"type":"number","name":"session_output_tokens","style":{"type":"plain","precision":0,"thousands_separator":true},"description":"Total output tokens"}'
   '{"type":"text","name":"commit_hash","description":"Git commit SHA hash"}'
   '{"type":"text","name":"branch","description":"Git branch name"}'
@@ -182,8 +183,8 @@ if [ -n "$VIEW_ID" ]; then
   FIELD_LIST_RESULT=$(lark-cli base +field-list --base-token "$BASE_TOKEN" --table-id "$TABLE_ID" 2>&1) || true
   ALL_FIELDS_JSON=$(echo "$FIELD_LIST_RESULT" | jq '(.data.fields // .data.items)')
 
-  # Build visible_fields array: repository, commit_message, commit_hash, branch, author, author_email, commit_time, lines_added, lines_deleted, files_changed
-  FIELD_ORDER='["repository","commit_message","session_cost","session_input_tokens","session_output_tokens","commit_hash","branch","author","author_email","commit_time","lines_added","lines_deleted","files_changed"]'
+  # Build visible_fields array in the preferred spreadsheet order
+  FIELD_ORDER='["repository","commit_message","session_model","session_cost","session_input_tokens","session_output_tokens","commit_hash","branch","author","author_email","commit_time","lines_added","lines_deleted","files_changed"]'
   VISIBLE_FIELDS=$(echo "$ALL_FIELDS_JSON" | jq --argjson order "$FIELD_ORDER" '
     [($order[] as $name | . as $fields | $fields[] | select(.name == $name) | (.id // .field_id))]
   ')
