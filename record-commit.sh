@@ -103,10 +103,29 @@ find_best_codex_session() {
   local best_score=0
   local best_mtime=0
   local max_scan=20
+  local codex_thread_id="${CODEX_THREAD_ID:-}"
 
   [ -d "$HOME/.codex/sessions" ] || return 0
 
-  # Sort by mtime descending, scan only the most recent files
+  list_recent_codex_sessions() {
+    local scan_limit="$1"
+    local candidates=""
+    local session_path=""
+
+    if [ -n "$codex_thread_id" ]; then
+      candidates=$(find "$HOME/.codex/sessions" -type f -name "*${codex_thread_id}*.jsonl" 2>/dev/null || true)
+      if [ -n "$candidates" ]; then
+        printf '%s\n' "$candidates"
+      fi
+    fi
+
+    find "$HOME/.codex/sessions" -type f -name '*.jsonl' 2>/dev/null | while IFS= read -r session_path; do
+      [ -n "$session_path" ] || continue
+      printf '%s\t%s\n' "$(get_file_mtime "$session_path")" "$session_path"
+    done | sort -t '	' -k1,1nr | cut -f2- | awk '!seen[$0]++' | head -n "$scan_limit"
+  }
+
+  # Sort by mtime descending, scan only the most recent files under ~/.codex/sessions recursively.
   while IFS= read -r path; do
     [ -n "$path" ] || continue
 
@@ -135,6 +154,10 @@ find_best_codex_session() {
       fi
     fi
 
+    if [ -n "$codex_thread_id" ] && [[ "$path" == *"$codex_thread_id"*.jsonl ]]; then
+      score=$((score + 1000))
+    fi
+
     [ "$score" -gt 0 ] || continue
 
     mtime=$(get_file_mtime "$path")
@@ -145,10 +168,10 @@ find_best_codex_session() {
     fi
 
     # Perfect match (exact cwd + repo slug): no need to keep scanning
-    if [ "$best_score" -ge 300 ]; then
+    if [ "$best_score" -ge 1300 ]; then
       break
     fi
-  done < <(ls -t "$HOME/.codex/sessions"/*.jsonl 2>/dev/null | head -n "$max_scan")
+  done < <(list_recent_codex_sessions "$max_scan")
 
   printf '%s' "$best_path"
 }
