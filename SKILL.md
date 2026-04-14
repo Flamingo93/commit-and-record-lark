@@ -15,6 +15,12 @@ description: "将 git commit 信息自动记录到飞书多维表格。当用户
 - 记录 commit 前，确认当前工作目录是目标 git 仓库
 - 涉及飞书写入前，确认用户意图；如用户已明确要求执行，可直接运行相关脚本
 
+## 触发方式
+
+- Claude Code：用户通常通过 `/commit-and-record-lark` 调用本 skill
+- Codex：用户通常会直接提到 `commit-and-record-lark` 或 `$commit-and-record-lark`；不要假设 Codex 使用 `/commit-and-record-lark` 触发
+- 若用户请求明显符合本 skill 描述，即使未显式写出命令形式，也应按本 skill 处理
+
 ## 前置条件
 
 - `lark-cli` 已安装并完成认证（参考 `lark-shared` skill）
@@ -40,7 +46,7 @@ bash "<skill-dir>/setup.sh"
 
 ## 默认行为
 
-不带任何子命令直接执行 `/commit-and-record-lark` 时，执行默认操作：**提交当前变更并记录到飞书多维表格**。
+当用户显式调用本 skill 且不带任何子命令时，执行默认操作：**提交当前变更并记录到飞书多维表格**。
 
 具体流程：
 1. 将当前已修改的文件 `git commit`
@@ -52,7 +58,10 @@ bash "<skill-dir>/setup.sh"
 
 ### 重置（新建表格）
 
-用户在 skill 名字后加 `reset`（如 `/commit-and-record-lark reset`）时，执行：
+用户在 skill 名字后加 `reset` 时执行，例如：
+
+- Claude Code：`/commit-and-record-lark reset`
+- Codex：`$commit-and-record-lark reset`
 
 ```bash
 bash "<skill-dir>/setup.sh" --force
@@ -62,7 +71,10 @@ bash "<skill-dir>/setup.sh" --force
 
 ### 关联已有表格
 
-用户在 skill 名字后加 `attach <URL>`（如 `/commit-and-record-lark attach https://my.feishu.cn/base/xxx?table=yyy`）时，执行：
+用户在 skill 名字后加 `attach <URL>` 时执行，例如：
+
+- Claude Code：`/commit-and-record-lark attach https://my.feishu.cn/base/xxx?table=yyy`
+- Codex：`$commit-and-record-lark attach https://my.feishu.cn/base/xxx?table=yyy`
 
 ```bash
 bash "<skill-dir>/attach.sh" "<URL>"

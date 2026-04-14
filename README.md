@@ -6,7 +6,7 @@
 
 ## 功能
 
-- **一键 commit + 记录** — 执行 `/commit-and-record-lark` 即可完成 git commit 并同步到飞书多维表格
+- **一键 commit + 记录** — Claude Code 中执行 `/commit-and-record-lark`，Codex 中提到 `commit-and-record-lark` 或 `$commit-and-record-lark` 即可完成 git commit 并同步到飞书多维表格
 - **自动采集 commit 元数据** — 仓库名、分支、作者、提交时间、变更行数、文件数等
 - **Session 成本追踪** — 自动解析 Claude Code transcript 或 Codex session 文件，按模型计算每次 commit 区间的 token 消耗和预估费用（增量计算）
 - **Session 模型记录** — 将本次 commit 区间内最后一个活跃模型记录到 `session_model` 字段
@@ -25,39 +25,65 @@
 
 ## 安装
 
-将本仓库克隆到宿主 Agent 的全局 skills 目录，即可作为 Skill 使用：
+将本仓库克隆到宿主 Agent 的全局 skills 目录，即可作为 Skill 使用。
+
+Claude Code 安装示例：
 
 ```bash
 # 克隆仓库
 git clone https://github.com/<your-org>/commit-and-record-lark.git
 
-# 创建符号链接到 skills 目录（Claude Code 示例）
+# 创建符号链接到 skills 目录
 ln -s "$(pwd)/commit-and-record-lark" ~/.claude/skills/commit-and-record-lark
 ```
 
-或者直接克隆到 skills 目录下：
+Codex 安装示例：
 
 ```bash
-git clone https://github.com/<your-org>/commit-and-record-lark.git ~/.claude/skills/commit-and-record-lark
+git clone https://github.com/<your-org>/commit-and-record-lark.git
+ln -s "$(pwd)/commit-and-record-lark" ~/.codex/skills/commit-and-record-lark
 ```
 
-安装完成后，在 Claude Code 中即可通过 `/commit-and-record-lark` 调用。
+或者直接克隆到对应 skills 目录下：
 
-如果你在 Codex 中使用本 Skill，可将链接目录替换为 `~/.codex/skills/commit-and-record-lark`。
+```bash
+# Claude Code
+git clone https://github.com/<your-org>/commit-and-record-lark.git ~/.claude/skills/commit-and-record-lark
+
+# Codex
+git clone https://github.com/<your-org>/commit-and-record-lark.git ~/.codex/skills/commit-and-record-lark
+```
+
+安装完成后：
+
+- Claude Code 中通过 `/commit-and-record-lark` 调用
+- Codex 中通过在对话里直接提到 `commit-and-record-lark` 或 `$commit-and-record-lark` 调用，而不是 `/commit-and-record-lark`
 
 ## 使用方法
 
 ### 首次使用：初始化多维表格
 
+Claude Code：
+
 ```
 /commit-and-record-lark setup
 ```
 
+Codex：
+
+```
+$commit-and-record-lark setup
+```
+
+或直接说：`请使用 commit-and-record-lark 初始化多维表格`
+
 或手动执行：
 
 ```bash
-bash ~/.claude/skills/commit-and-record-lark/setup.sh
+bash <skill-dir>/setup.sh
 ```
+
+其中 `<skill-dir>` 在 Claude Code 中通常为 `~/.claude/skills/commit-and-record-lark`，在 Codex 中通常为 `~/.codex/skills/commit-and-record-lark`。
 
 该命令会自动：
 1. 通过 `lark-cli` 创建飞书多维表格
@@ -70,24 +96,50 @@ bash ~/.claude/skills/commit-and-record-lark/setup.sh
 
 ### 日常使用：commit 并记录
 
+Claude Code：
+
 ```
 /commit-and-record-lark
 ```
+
+Codex：
+
+```
+$commit-and-record-lark
+```
+
+或直接说：`请用 commit-and-record-lark 帮我 commit 并记录到飞书`
 
 这是最常用的操作：提交当前变更并将 commit 信息写入飞书多维表格。
 
 ### 重置（创建新表格）
 
+Claude Code：
+
 ```
 /commit-and-record-lark reset
+```
+
+Codex：
+
+```
+$commit-and-record-lark reset
 ```
 
 会创建一个全新的多维表格并覆盖旧配置。
 
 ### 关联已有表格
 
+Claude Code：
+
 ```
 /commit-and-record-lark attach https://my.feishu.cn/base/xxx?table=yyy
+```
+
+Codex：
+
+```
+$commit-and-record-lark attach https://my.feishu.cn/base/xxx?table=yyy
 ```
 
 从飞书多维表格 URL 中解析 `base_token` 和 `table_id`，验证连通性后保存到配置文件。
@@ -95,7 +147,7 @@ bash ~/.claude/skills/commit-and-record-lark/setup.sh
 ### 手动记录指定 commit
 
 ```bash
-bash ~/.claude/skills/commit-and-record-lark/record-commit.sh <commit-hash>
+bash <skill-dir>/record-commit.sh <commit-hash>
 ```
 
 ## 记录的字段
@@ -133,7 +185,7 @@ bash ~/.claude/skills/commit-and-record-lark/record-commit.sh <commit-hash>
 
 ```
 commit-and-record-lark/
-├── SKILL.md            # Skill 定义文件（Claude Code 读取）
+├── SKILL.md            # Skill 定义文件（供 Claude Code / Codex 读取）
 ├── setup.sh            # 初始化飞书多维表格
 ├── record-commit.sh    # 记录 commit 到多维表格
 ├── attach.sh           # 关联已有多维表格
