@@ -199,6 +199,3 @@ commit-and-record-lark/
 - **lark-cli 权限不足** — 运行 `lark-cli auth login` 重新授权
 - **字段写入失败** — 检查 `bitable-meta.json` 中的 `base_token` 和 `table_id` 是否正确
 
-## 许可证
-
-MIT
