@@ -17,7 +17,7 @@
 ## 前置条件
 
 - [Claude Code](https://claude.ai/code) 或 Codex 已安装
-- [`lark-cli`](https://github.com/nicepkg/lark-cli) 已安装并完成认证（`lark-cli auth login`）
+- [`lark-cli`](https://github.com/larksuite/cli) 已安装并完成认证（`lark-cli auth login`）
 - `jq` 已安装
 - 当前目录在一个 git 仓库内
 
