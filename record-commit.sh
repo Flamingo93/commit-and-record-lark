@@ -102,24 +102,23 @@ find_best_codex_session() {
   local best_path=""
   local best_score=0
   local best_mtime=0
+  local max_scan=20
 
   [ -d "$HOME/.codex/sessions" ] || return 0
 
+  # Sort by mtime descending, scan only the most recent files
   while IFS= read -r path; do
     [ -n "$path" ] || continue
 
-    local meta
-    local cwd
-    local git_url
-    local git_slug=""
-    local score=0
-    local mtime
+    local meta_json cwd git_url git_slug=""
+    local score=0 mtime
 
-    meta=$(head -n 1 "$path" 2>/dev/null | jq -c 'select(.type == "session_meta") | .payload' 2>/dev/null || true)
-    [ -n "$meta" ] || continue
+    # Single jq call to extract both cwd and git url
+    meta_json=$(head -n 1 "$path" 2>/dev/null | jq -c 'select(.type == "session_meta") | {cwd: .payload.cwd, git_url: .payload.git.repository_url}' 2>/dev/null || true)
+    [ -n "$meta_json" ] || continue
 
-    cwd=$(echo "$meta" | jq -r '.cwd // empty' 2>/dev/null || true)
-    git_url=$(echo "$meta" | jq -r '.git.repository_url // empty' 2>/dev/null || true)
+    cwd=$(echo "$meta_json" | jq -r '.cwd // empty')
+    git_url=$(echo "$meta_json" | jq -r '.git_url // empty')
 
     if [ -n "$cwd" ]; then
       if [ "$cwd" = "$repo_root" ]; then
@@ -144,7 +143,12 @@ find_best_codex_session() {
       best_score="$score"
       best_mtime="$mtime"
     fi
-  done < <(find "$HOME/.codex/sessions" -type f -name '*.jsonl' 2>/dev/null)
+
+    # Perfect match (exact cwd + repo slug): no need to keep scanning
+    if [ "$best_score" -ge 300 ]; then
+      break
+    fi
+  done < <(ls -t "$HOME/.codex/sessions"/*.jsonl 2>/dev/null | head -n "$max_scan")
 
   printf '%s' "$best_path"
 }
