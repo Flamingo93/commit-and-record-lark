@@ -1,6 +1,6 @@
 # commit-and-record-lark
 
-一个适用于 [Claude Code](https://claude.ai/code) 和 Codex 的 Skill 插件，在执行 git commit 时自动将提交信息记录到**飞书多维表格（Bitable）**，实现代码提交的追踪与分析。
+一个适用于 Claude Code 和 Codex 的 Skill 插件，在执行 git commit 时自动将提交信息记录到**飞书多维表格（Bitable）**，实现代码提交的追踪与分析。
 
 所有项目共享同一张多维表格，通过 `repository` 字段区分不同仓库。
 
