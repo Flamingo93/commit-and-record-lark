@@ -49,7 +49,11 @@ round_currency() {
 }
 
 get_codex_model_rates() {
+  # USD per 1M tokens: input cached_input output.
   case "$1" in
+    gpt-5.5)
+      echo "5.00 0.50 30.00"
+      ;;
     gpt-5.4)
       echo "2.50 0.25 15.00"
       ;;

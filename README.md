@@ -187,7 +187,7 @@ bash <skill-dir>/record-commit.sh <commit-hash>
 | claude-sonnet-4-6 | $3/M | $15/M | $3.75/M | $0.30/M |
 | claude-haiku-4-5 | $1/M | $5/M | $1.25/M | $0.10/M |
 
-在 Codex 环境下，脚本会根据 OpenAI GPT/Codex 模型分别计算价格，并记录 `session_model`。当前内置了 `gpt-5.4`、`gpt-5.3-codex`、`gpt-5.2-codex`、`gpt-5.1-codex`、`gpt-5.1-codex-mini`、`gpt-5.1-codex-max`、`codex-mini-latest` 等常见模型的价格映射；遇到未知模型时仍会记录 token 和模型，但会跳过 `session_cost`。
+在 Codex 环境下，脚本会根据 OpenAI GPT/Codex 模型分别计算价格，并记录 `session_model`。当前内置了 `gpt-5.5`、`gpt-5.4`、`gpt-5.3-codex`、`gpt-5.2-codex`、`gpt-5.1-codex`、`gpt-5.1-codex-mini`、`gpt-5.1-codex-max`、`codex-mini-latest` 等常见模型的价格映射；遇到未知模型时仍会记录 token 和模型，但会跳过 `session_cost`。
 
 ## 项目结构
 
