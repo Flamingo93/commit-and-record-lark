@@ -4,6 +4,14 @@
 
 所有项目共享同一张多维表格，通过 `repository` 字段区分不同仓库。
 
+## 效果预览
+
+可以打开这个飞书多维表格示例，直观看到最终记录效果：
+
+[commit-and-record-lark 交付效果示例](https://my.feishu.cn/base/Wx9RbsZrUaBZZns8frwcI0ShnRc?table=tblEZXeb6EM8FUyE&view=vewOPgkAFV)
+
+示例中展示了每次 commit 写入后的记录形态，包括仓库、分支、提交信息、提交时间、变更规模、session 模型、token 消耗和预估成本等字段。
+
 ## 功能
 
 - **一键 commit + 记录** — Claude Code 中执行 `/commit-and-record-lark`，Codex 中提到 `commit-and-record-lark` 或 `$commit-and-record-lark` 即可完成 git commit 并同步到飞书多维表格
@@ -198,4 +206,3 @@ commit-and-record-lark/
 - **config not found** — 运行 `setup.sh` 完成初始化
 - **lark-cli 权限不足** — 运行 `lark-cli auth login` 重新授权
 - **字段写入失败** — 检查 `bitable-meta.json` 中的 `base_token` 和 `table_id` 是否正确
-
